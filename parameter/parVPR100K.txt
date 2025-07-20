@@ -1,0 +1,12 @@
+# title 
+VPRimputation100k_v1
+# chips
+vpr/Axiom_Bov100k_cln
+vpr/GGP_Bovine_100K_cln
+vpr/GGPV4_cln
+vpr/ILL-BOVINE_SNP50-V2_cln
+vpr/BovineHD_B_cln
+vpr/GGPHDv3_cln
+vpr/LGS_Bovine_50k_cln
+# reference
+vpr/GGP_Bovine_100K_cln
