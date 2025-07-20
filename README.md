@@ -74,3 +74,65 @@ This repository contains a pipeline composed of three main scripts for convertin
 
 ```bash
 bash Step1_formSynergytoPlink.sh
+```
+
+## Detailed Workflow (Step 1)
+
+1. **Setup and Data Copying**  
+   Creates a working directory and copies input CSV files (`info_campioni.csv`, `genotipi.csv`, `marker_new.csv`) into it.
+
+2. **Initial Quality Checks**  
+   - Summarizes genotype quality from `info_campioni.csv`.  
+   - Checks genotype string length distribution per sample from `genotipi.csv`.  
+   - Counts the number of lines in the marker file.
+
+3. **Truncation of Genotypes**  
+   Truncates all genotypes to the minimum length found among samples, to ensure consistency.
+
+4. **Preparation of Genotype and Sample Files**  
+   - Cleans sample names (replaces spaces with underscores).  
+   - Extracts and processes breed, sample ID, lab ID, and chip name.  
+   - Joins genotype data with sample info.  
+   - Splits data by breed into separate SNP files.
+
+5. **Organization and Conversion**  
+   - Removes breed columns from files.  
+   - Creates separate folders for each breed.  
+   - Splits SNP files by chip type, saving individual SNP files per chip.  
+   - Converts SNP data to PLINK format using the Python script `f90_plink.py`.
+
+6. **PLINK Cleaning**  
+   - Removes duplicate samples, keeping only unique individuals.  
+   - Filters SNPs and samples with high missing rates using PLINK v1.9 and PLINK2.  
+   - Generates summary statistics for each panel.
+
+7. **Cleanup**  
+   - Deletes temporary files.  
+   - Provides logs and summary files for review.
+
+---
+
+## Prerequisites
+
+- Bash shell environment (Linux/Unix/MacOS).  
+- Standard Unix utilities: `awk`, `sort`, `uniq`, `join`, `sed`, `wc`.  
+- `python3` for running the Python conversion script (`f90_plink.py`).  
+- PLINK v1.9 and PLINK2 installed and accessible in your PATH.  
+- Adequate disk space for intermediate and output files.
+
+---
+
+## How to Run Step 1
+
+1. Place the script `Step1_formSynergytoPlink.sh` in your working directory.
+
+2. Ensure the following input files exist one directory level up in `../Dati_18072025/`:
+
+   - `info_campioni.csv`  
+   - `genotipi.csv`  
+   - `marker_new.csv`
+
+3. Execute the script with:
+
+```bash
+bash Step1_formSynergytoPlink.sh
