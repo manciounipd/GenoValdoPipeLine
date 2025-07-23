@@ -1,0 +1,14 @@
+title="Imputation";
+genotype_file="file.snp";
+snp_info_file="file.map";
+output_folder="imputazione";
+ped_file="ped.txt";
+keep_og;
+save_genotype; 
+parentage_test / ert_mm=0.05 /remove_conflict ;
+add_ungen / min_fsize=4 /save_sep;
+ref_chip=7; 
+njob=15;
+ped_depth = 0; 
+
+

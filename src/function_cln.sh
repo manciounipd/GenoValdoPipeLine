@@ -14,8 +14,24 @@ prepare_imputation_files() {
     echo "Title: $title"
 
     # Create directory with title name and move into it
-    mkdir -p "$title"
-    cd "$title" || { echo "Failed to enter directory $title"; return 1; }
+    # Create directory and move into it
+    # Check if directory exists
+    if [ -d "$title" ]; then
+        if [ -z "$(ls -A "$title")" ]; then
+            echo "⚠️ Directory '$title' exists but is empty. Exiting..."
+            exit 1
+        else
+            echo "✅ Directory '$title' exists and is not empty. Continuing..."
+        fi
+    else
+        # Create directory if it does not exist
+        mkdir -p "$title" || { echo "❌ Failed to create directory $title"; exit 1; }
+        echo "📂 Created directory '$title'"
+    fi
+
+    # Move into directory
+    cd "$title" || { echo "❌ Failed to enter directory $title"; exit 1; }
+
 
     # Save original parameter file
     cp "../$par" parametro_usato.txt
@@ -28,8 +44,8 @@ prepare_imputation_files() {
     awk -v line="$ref_line" 'NR > line {print $0}' "../$par" > downgrade.txt
 
     # Create pannel_keep.txt (lines between "# chips" and "# reference")
-awk -v line="$ref_line" 'NR < line {print $0}' "../$par" \
-    | sed -n '/# chips/,$p' | sed '1d' > pannel_keep.txt
+    awk -v line="$ref_line" 'NR < line {print $0}' "../$par" \
+        | sed -n '/# chips/,$p' | sed '1d' > pannel_keep.txt
 
     # Set filename variable
     filename="$title"

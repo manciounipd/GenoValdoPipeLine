@@ -1,4 +1,12 @@
 #!/bin/bash
+source ../code/src/function_cln.sh
+
+par=$1
+FImpute3_par=$2
+
+prepare_imputation_files $par
+
+echo $FImpute3_par
 
 echo "serve per avere un feed back sul controllo dei dati"
 
@@ -11,8 +19,14 @@ nohup seekparentf90 --thr_call_rate 0.001 --maxsnp 200000 \
     > seek_preimpute.log 2>&1 &
 
 
-cp ../../ana.txt ped.txt
-FImpute3 ../../par/par.txt -o
+echo $(pwd)
+
+Rscript ../../code/src/pca.R
+
+# to do opzion that remove the pca
+
+cp ../../ana2025/ana.txt ped.txt
+FImpute3  "../"$FImpute3_par -o || exit 1 
 
 
 cd imputazione/

@@ -254,3 +254,4 @@ rm -f *tmp*
 echo "✅ fine parte sistemazione genotipi"
 
 
+rm all.snp chefile.txt cln_plink.log duplictae_within_chips_log.txt file.map  file.snp s.log 

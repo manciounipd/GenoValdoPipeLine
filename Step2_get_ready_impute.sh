@@ -1,15 +1,19 @@
 #!/bin/bash 
-
-source ../src/function_cln.sh
+set -e
+source ../code/src/function_cln.sh
 
 #cp par_vpr.txt par_vpn_prediction.txt
 #par="../par_vpn_gwas.txt"
 
 echo "name of the file..."
 
-#par=$1
+par=$1
+if [[ ! -f $par ]]; then
+    echo "❌ No file par !"
+    exit 1
+fi
 
-prepare_imputation_files parVPR100K.txt 
+prepare_imputation_files $par
 
 echo  "Copia i files.."
 
@@ -18,6 +22,7 @@ while IFS= read -r file; do
     cp "../${file}.ped" .
 done < pannel_keep.txt
 
+echo "Step 1 ........"
 echo " Rimozione duplicati entro panello "
 echo "(lo ho fatto anche nello script precente ma per sicuarezza)"
 
@@ -29,12 +34,21 @@ done < pannel_keep.txt | tee duplictae_within_chips_log.txt
 
 
 
-printf "########################################\n
-step 2 rimuovi aniamli in tra i chips \n
-la logica che se ho un animale in comune tra due chips prendo quello \n
-sul chips piu denso oppure il pannelo da downgradare come pannello piugrande \n
-scelgo io l'orodine dei panneli in base all numero di righe ne l bim\n\n"
 printf "########################################\n"
+printf "🚀 STEP 2: Rimozione animali presenti su più chip\n"
+printf "\n"
+printf "📌 Logica:\n"
+printf "  - Se un animale è presente su più chip, mantengo quello:\n"
+printf "    • Sul chip più denso (maggior numero di SNP).\n"
+printf "    • Oppure sul pannello scelto come principale.\n"
+printf "\n"
+printf "🔀 L'ordine dei pannelli viene stabilito in base al numero di righe nel file .bim:\n"
+printf "    → Il pannello con più righe è considerato il più grande.\n"
+printf "    → Gli altri vengono downgradati se necessario.\n"
+printf "\n"
+printf "########################################\n"
+
+
 
 # genera un nuovo file che mi serve da guida in ordinde di mappa di densita
 ls -1 *.bim | xargs -I {} sh -c 'echo "$(wc -l {})"' | sort -n  | awk '{print $2}' > chefile.txt
@@ -59,8 +73,13 @@ fi
 
 cat   chefile.txt downgrade.txt > chefile.tmp
 mv chefile.tmp chefile.txt
-python3 ../../src/btween_chip_duplicate.py
 
+python3 ../../code/src/btween_chip_duplicate.py
+
+if [ $? -ne 0 ]; then
+    echo "❌ Python script failed. Exiting..."
+    exit 1
+fi
 # riniomvi per evitare casini
 
 for ext in bim fam bed; do
@@ -73,10 +92,21 @@ done
 
 
 
+printf "########################################\n"
+printf "📦 STEP 3: Downgrade pannelli e gestione nomi SNP\n"
+printf "\n"
+printf "📌 Nota:\n"
+printf "  - Anche i nomi degli SNP vengono controllati se presenti.\n"
+printf "  - Per ora viene effettuato solo il downgrade dei pannelli.\n"
+printf "  - Appena disponibili le mappe aggiornate (update map), sarà possibile aggiornare anche i nomi SNP.\n"
+printf "\n"
+printf "⚙️ Procedura:\n"
+printf "  • Effettuo il downgrade dei pannelli per uniformare i dataset.\n"
+printf "  • Nomi SNP verranno gestiti in una fase successiva quando noto.\n"
+printf "\n"
+printf "########################################\n"
 
-# anche per i nomi degli snp se hanno nomi 
-# intanto faccio questo downgrade
-# appena so le mappe update map
+
 
 todonw=$(cat downgrade.txt)
 
@@ -115,18 +145,20 @@ done
 # crea file fimpute
 rm *~
 
-# qua potrei fare una cosa se faccio panneli downgrade
-#       basta che al file aggiunfo un prefisso 
+# DA QUA SOLO MIGLIORARE LOS STYLE
 
+printf "########################################\n"
+printf "📦 STEP  Crea file 4\n"
+printf "\n"# rimuvoi snp doppio e in comume
+printf "########################################\n"
 
 echo "create file snp.."
 
-# rimuvoi snp doppio e in comume
+
 
 while IFS= read -r i
  do   
     filex=$(echo "$i" | sed 's/\.bim$//')
-    echo "###############################"
     echo $filex
     echo "removing duplicate names..."
     plink2 --cow --bfile $filex --export ped 12  --rm-dup  --out $filex > log
@@ -134,14 +166,13 @@ while IFS= read -r i
     awk '{print $1"_"$4,$2}' $filex".map"  > tmp
     awk '{print $1}' tmp | sort -k 1b,1 | uniq -c | awk '$1>1 {print $0}' > dpl.txt
     join -1 2 -2 1 <(sort -k 2b,2 dpl.txt) <(sort -k 1b,1 tmp ) | awk '{print $3}' > rm.tmp
-#   
     plink2 --cow --exclude rm.tmp --bfile $filex --export ped 12 --out $filex > log
     echo $( wc -l dpl.txt)
 done < chefile.txt
 
 
 
-
+echo "✅"
 
 echo "ID chips genotype" > file.snp
 row=1
@@ -162,12 +193,6 @@ while IFS= read -r i
     ((row++))
 done < chefile.txt
 
-wc -l file.snp
-
-echo " quanti duplicati: "
-awk '{count[$1]++} END {for (i in count) if (count[i] > 1) print i, count[i]}' file.snp | wc -l
-
-
 # crea il file da imputare 
 # file snp...
 
@@ -180,12 +205,11 @@ done <  chefile.txt
 
 
 sed -i '1d' merge.txt
-plink --cow --merge-list  merge.txt --recode ped 12 --out s > log_merge
-
+plink --cow --merge-list  merge.txt --recode ped 12 --out s > log 2>&1 
 echo "tranforma in blupf90 , questo serve per fare un check.." 
-plink --cow --file s --recode A --out s > log_makraw
+plink --cow --file s --recode A --out s > log 2>&1
 
-echo "rimuvoi errori"
+
 
 awk 'NR > 1{ 
         printf "%s ", $2; for (i=7; i<=NF; i++) printf "%s", $i;
@@ -212,5 +236,5 @@ sed  -i "1i SNP_ID chr pos $chip"   file.map
 
 
 
-echo "End"
+echo "End ✅ "
 
